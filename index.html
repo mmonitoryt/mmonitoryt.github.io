@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>sandsite</title>
-  </head>
+<head>
+  <title>sandsite</title>
   <style>
     .neon-text {
       font-size: 80px;
@@ -11,20 +10,78 @@
       font-style: italic;
       text-align: center;
       text-shadow: 
-      0 0 5px #fff,
-      0 0 10px #fff,
-      0 0 15px #0073e6,
-      0 0 20px #0073e6,
-      0 0 25px #0073e6,
-      0 0 30px #0073e6,
-      0 0 35px #0073e6;
+        0 0 5px #fff,
+        0 0 10px #fff,
+        0 0 15px #0073e6,
+        0 0 20px #0073e6,
+        0 0 25px #0073e6,
+        0 0 30px #0073e6,
+        0 0 35px #0073e6;
     }
 
     body {
       background-color: #111111;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
     }
   </style>
-  <body>
-    <p class=neon-text>sandsite</p>
-  </body>
+</head>
+<body>
+  <h1 class="neon-text" id="status">Loading...</h1>
+
+  <script type="module">
+    // Minimal Tar extractor (Ustar format)
+    async function extractWasmFromTar(url, filename) {
+      const response = await fetch(url);
+      const buffer = await response.arrayBuffer();
+      const view = new Uint8Array(buffer);
+      let offset = 0;
+
+      while (offset < view.length) {
+        // Tar headers are 512 bytes; name is the first 100 bytes
+        const headerName = new TextDecoder().decode(view.slice(offset, offset + 100)).replace(/\0/g, '');
+        
+        // Size is at offset 124, 12 bytes long, octal string
+        const sizeStr = new TextDecoder().decode(view.slice(offset + 124, offset + 136)).trim();
+        const size = parseInt(sizeStr, 8);
+
+        if (headerName === filename) {
+          const fileStart = offset + 512;
+          return view.slice(fileStart, fileStart + size);
+        }
+
+        // Move to next header: header (512) + content (padded to 512)
+        offset += 512 + Math.ceil(size / 512) * 512;
+      }
+      throw new Error(`File ${filename} not found in tar`);
+    }
+
+    async function init() {
+      const status = document.getElementById('status');
+      try {
+        // Change 'archive.tar' and 'module.wasm' to your actual file names
+        const wasmBytes = await extractWasmFromTar('tpt2.tar', 'powder.wasm');
+        
+        const { instance } = await WebAssembly.instantiate(wasmBytes, {
+          env: { 
+            memory: new WebAssembly.Memory({ initial: 256 }),
+            abort: () => console.log("Abort!") 
+          }
+        });
+
+        status.textContent = "WASM Loaded!";
+        console.log("WASM Instance:", instance);
+        
+      } catch (err) {
+        status.textContent = "Error Loading WASM";
+        console.error(err);
+      }
+    }
+
+    init();
+  </script>
+</body>
 </html>

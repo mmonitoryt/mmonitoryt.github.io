@@ -31,26 +31,39 @@
 </head>
 <body>
   <h1 class="neon-text" id="status">Loading...</h1>
-<script>
-        async function runWasm() {
-            try {
-                // Fetch the .wasm file and stream-compile it
-                const response = await fetch('./powder.wasm');
-                const { instance } = await WebAssembly.instantiateStreaming(response, {});
 
-                // Access the exported function (e.g., 'add')
-                const addNumbers = instance.exports.add;
+  <script>
+    async function runWasm() {
+      const statusElement = document.getElementById('status');
+      
+      try {
+        // Use a relative path if this HTML is in the same repo as the .wasm
+        // This avoids CORS issues and MIME type mismatches
+        const response = await fetch('./powder.wasm');
 
-                // Call the Wasm function
-                const result = addNumbers(10, 50);
-                console.log("Result:", result); // Should log 60
+        // Check if the fetch was successful
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
-            } catch (error) {
-                console.error("Error loading WebAssembly module:", error);
-            }
+        const { instance } = await WebAssembly.instantiateStreaming(response, {});
+
+        // Access the exported function
+        const addNumbers = instance.exports.add;
+
+        if (addNumbers) {
+          const result = addNumbers(10, 50);
+          statusElement.textContent = "Result: " + result; // Update the UI
+          console.log("Result:", result);
+        } else {
+          statusElement.textContent = "Function 'add' not found";
         }
 
-        runWasm();
-    </script>
+      } catch (error) {
+        statusElement.textContent = "Error Loading Wasm";
+        console.error("Error loading WebAssembly module:", error);
+      }
+    }
+
+    runWasm();
+  </script>
 </body>
 </html>

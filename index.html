@@ -17,52 +17,49 @@
 <body>
     <h1 class="neon-text" id="status">Loading...</h1>
 
-    <script src="https://cdn.jsdelivr.net/npm/@wasmer/wasi@1.2.2/lib/index.cjs.js"></script>
+    <script type="module">
+        // Import WASI directly from a module-friendly CDN
+        import { WASI } from 'https://cdn.jsdelivr.net/npm/@wasmer/wasi@1.2.2/+esm';
 
-    <script>
         async function runWasm() {
             const statusElement = document.getElementById('status');
             
             try {
-                // WasmerWasi is often nested under 'WASI' or 'Wasmer' depending on the bundle
-                // Let's grab the constructor safely
-                const WASI = window.WASI?.WASI || window.WasmerWasi?.WASI;
-
-                if (!WASI) {
-                    throw new Error("WASI library failed to load globally.");
-                }
-
+                // Initialize WASI
                 const wasi = new WASI({
                     args: [],
                     env: {},
-                    preopens: {}
                 });
 
+                // Fetch your WASM file
                 const response = await fetch('./powder.wasm');
+                if (!response.ok) throw new Error("Could not find powder.wasm file");
+                
                 const binary = await response.arrayBuffer();
                 
-                // Merge WASI imports with any other potential imports
+                // Create the import object with the WASI requirements
                 const importObject = {
                     wasi_snapshot_preview1: wasi.wasiImport
                 };
 
+                // Instantiate
                 const { instance } = await WebAssembly.instantiate(binary, importObject);
 
-                // Initialize WASI
+                // Start the WASI runtime (required for wasm32-wasi targets)
                 wasi.start(instance);
 
-                // Call your exported function
+                // Try to call your function
                 if (instance.exports.add) {
                     const result = instance.exports.add(10, 50);
                     statusElement.textContent = "Result: " + result;
                 } else {
-                    statusElement.textContent = "Wasm Loaded!";
-                    console.log("Exports available:", instance.exports);
+                    statusElement.textContent = "Wasm Ready!";
+                    console.log("Available Exports:", Object.keys(instance.exports));
                 }
 
             } catch (error) {
-                statusElement.textContent = "Error!";
-                console.error("Error loading WebAssembly module:", error);
+                statusElement.textContent = "Load Error";
+                console.error("Wasm/WASI Error:", error);
             }
         }
 

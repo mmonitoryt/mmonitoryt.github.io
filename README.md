@@ -1,2 +1,0 @@
-# mmonitoryt.github.io
-web

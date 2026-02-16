@@ -18,52 +18,37 @@
     <h1 class="neon-text" id="status">Loading...</h1>
 
     <script type="module">
-        // Import WASI directly from a module-friendly CDN
-        import { WASI } from 'https://cdn.jsdelivr.net/npm/@wasmer/wasi@1.2.2/+esm';
+    // 1. Import the 'init' function from the JS file generated alongside your WASM
+    // If your file is called powder.wasm, the JS is usually powder.js
+    import init, { add } from './powder.js';
 
-        async function runWasm() {
-            const statusElement = document.getElementById('status');
+    async function runWasm() {
+        const statusElement = document.getElementById('status');
+        
+        try {
+            // 2. Initialize the WASM module
+            // This function automatically handles the stack pointer and imports
+            await init();
+
+            // 3. Call your function directly
+            // wasm-bindgen exports functions to the top level
+            const result = add(10, 50);
             
-            try {
-                // Initialize WASI
-                const wasi = new WASI({
-                    args: [],
-                    env: {},
-                });
+            statusElement.textContent = "Result: " + result;
+            console.log("Wasm initialized successfully!");
 
-                // Fetch your WASM file
-                const response = await fetch('./powder.wasm');
-                if (!response.ok) throw new Error("Could not find powder.wasm file");
-                
-                const binary = await response.arrayBuffer();
-                
-                // Create the import object with the WASI requirements
-                const importObject = {
-                    wasi_snapshot_preview1: wasi.wasiImport
-                };
-
-                // Instantiate
-                const { instance } = await WebAssembly.instantiate(binary, importObject);
-
-                // Start the WASI runtime (required for wasm32-wasi targets)
-                wasi.start(instance);
-
-                // Try to call your function
-                if (instance.exports.add) {
-                    const result = instance.exports.add(10, 50);
-                    statusElement.textContent = "Result: " + result;
-                } else {
-                    statusElement.textContent = "Wasm Ready!";
-                    console.log("Available Exports:", Object.keys(instance.exports));
-                }
-
-            } catch (error) {
-                statusElement.textContent = "Load Error";
-                console.error("Wasm/WASI Error:", error);
+        } catch (error) {
+            statusElement.textContent = "Init Error";
+            console.error("Wasm/Bindgen Error:", error);
+            
+            // Helpful hint if the file is missing
+            if (error.message.includes("404")) {
+                console.warn("Make sure 'powder.js' is in the same folder as your HTML!");
             }
         }
+    }
 
-        runWasm();
-    </script>
+    runWasm();
+</script>
 </body>
 </html>

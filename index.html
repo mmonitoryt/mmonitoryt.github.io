@@ -32,45 +32,42 @@
 <body>
   <h1 class="neon-text" id="status">Loading...</h1>
 
-  <script>
+  <script src="https://unpkg.com/@wasmer/wasi@1.2.2/dist/index.cjs.js"></script>
+
+<script>
     async function runWasm() {
-      const statusElement = document.getElementById('status');
-      
-      try {
-        // Use a relative path if this HTML is in the same repo as the .wasm
-        // This avoids CORS issues and MIME type mismatches
-        const response = await fetch('./powder.wasm');
+        const statusElement = document.getElementById('status');
+        
+        try {
+            // 2. Initialize the WASI polyfill
+            const wasi = new WasmerWasi.WASI({
+                args: [],
+                env: {},
+            });
 
-        // Check if the fetch was successful
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const response = await fetch('./powder.wasm');
+            const binary = await response.arrayBuffer();
+            
+            // 3. Instantiate with WASI imports
+            const { instance } = await WebAssembly.instantiate(binary, {
+                // This provides the 'wasi_snapshot_preview1' the module is looking for
+                wasi_snapshot_preview1: wasi.wasiImport 
+            });
 
-        const importObject = {
-          env: {
-            memory: new WebAssembly.Memory({ initial: 256 }),
-            table: new WebAssembly.Table({ initial: 0, element: 'anyfunc' }),
-            abort: () => console.log("Abort called!")
-          }      
-        };
+            // 4. Start the WASI instance
+            wasi.start(instance);
 
-        const { instance } = await WebAssembly.instantiateStreaming(response, importObject);
+            // Now call your function
+            const result = instance.exports.add(10, 50);
+            statusElement.textContent = "Result: " + result;
 
-        // Access the exported function
-        const addNumbers = instance.exports.add;
-
-        if (addNumbers) {
-          const result = addNumbers(10, 50);
-          console.log("Result:", result);
-        } else {
-          statusElement.textContent = "Function 'add' not found";
+        } catch (error) {
+            statusElement.textContent = "WASI Error";
+            console.error("Error loading WebAssembly module:", error);
         }
-
-      } catch (error) {
-        statusElement.textContent = "Error Loading Wasm";
-        console.error("Error loading WebAssembly module:", error);
-      }
     }
 
     runWasm();
-  </script>
+</script>
 </body>
 </html>

@@ -13,20 +13,41 @@
     <script src="./powder.js"></script>
 
     <script>
-        async function runWasm() {
-            const statusElement = document.getElementById('status');
-            try {
-                // If you are testing locally, make sure you are using a server
-                // and not just opening the file!
-                const wasmModule = await create_powder();
-                statusElement.textContent = "Multi-threaded Wasm Active!";
-                console.log("Module Ready:", wasmModule);
-            } catch (error) {
-                statusElement.textContent = "Security Block";
-                console.error(error);
-            }
+    // 1. Define the Module configuration BEFORE loading powder.js
+    var Module = {
+        // Force the number of threads to 0
+        'PTHREAD_POOL_SIZE': 0,
+        // Disable the worker logic
+        'mainScriptUrlOrBlob': null, 
+        'print': function(text) { console.log(text); },
+        'printErr': function(text) { console.warn(text); },
+        'onRuntimeInitialized': function() {
+            console.log("Wasm initialized in single-threaded mode!");
+            document.getElementById('status').textContent = "Running (Single-Thread)";
         }
-        window.addEventListener('load', runWasm);
-    </script>
+    };
+</script>
+
+<script src="./powder.js"></script>
+
+<script>
+    async function runWasm() {
+        try {
+            // 3. Initialize using your factory function
+            // We pass the Module object we defined above
+            const instance = await create_powder(Module);
+            
+            // Check if it works
+            if (instance._main) {
+                console.log("Main function found.");
+            }
+        } catch (error) {
+            console.error("Failed to force single-thread:", error);
+            document.getElementById('status').textContent = "Threads Required";
+        }
+    }
+
+    window.addEventListener('load', runWasm);
+</script>
 </body>
 </html>

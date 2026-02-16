@@ -2,35 +2,10 @@
 <html>
 <head>
     <title>sandsite</title>
+    <script src="coi-serviceworker.js"></script>
+    
     <style>
-        .neon-text {
-            font-size: 80px;
-            color: #fff;
-            font-family: 'Brush Script MT', cursive;
-            font-style: italic;
-            text-align: center;
-            text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #0073e6, 0 0 20px #0073e6, 0 0 25px #0073e6, 0 0 30px #0073e6, 0 0 35px #0073e6;
-        }
-        body { background-color: #111111; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-    </style>
-</head>
-<body>
-    <h1 class="neon-text" id="status">Loading...</h1>
-
-    <!DOCTYPE html>
-<html>
-<head>
-    <title>sandsite</title>
-    <style>
-        .neon-text {
-            font-size: 80px;
-            color: #fff;
-            font-family: 'Brush Script MT', cursive;
-            font-style: italic;
-            text-align: center;
-            text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #0073e6, 0 0 20px #0073e6, 0 0 25px #0073e6, 0 0 30px #0073e6, 0 0 35px #0073e6;
-        }
-        body { background-color: #111111; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        /* ... your existing CSS ... */
     </style>
 </head>
 <body>
@@ -41,34 +16,18 @@
     <script>
         async function runWasm() {
             const statusElement = document.getElementById('status');
-            
             try {
-                // 2. Call the Emscripten factory function. 
-                // It handles downloading the .wasm file, setting up memory, and linking C++ libraries automatically.
+                // If you are testing locally, make sure you are using a server
+                // and not just opening the file!
                 const wasmModule = await create_powder();
-
-                statusElement.textContent = "Wasm Loaded!";
-
-                // 3. Print the initialized module to the console
-                console.log("Emscripten Module loaded successfully:", wasmModule);
-
-                // Note: C/C++ functions exported by Emscripten usually start with an underscore
-                if (wasmModule._main) {
-                    console.log("Found the C++ main() function!");
-                    // If your game/simulation starts via the main() function in C++, you can call it here:
-                    // wasmModule._main(); 
-                }
-
+                statusElement.textContent = "Multi-threaded Wasm Active!";
+                console.log("Module Ready:", wasmModule);
             } catch (error) {
-                statusElement.textContent = "Error!";
-                console.error("Emscripten Load Error:", error);
+                statusElement.textContent = "Security Block";
+                console.error(error);
             }
         }
-
-        // Wait for the window to load to ensure powder.js has been parsed
         window.addEventListener('load', runWasm);
     </script>
-</body>
-</html>
 </body>
 </html>

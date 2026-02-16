@@ -44,7 +44,15 @@
         // Check if the fetch was successful
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
-        const { instance } = await WebAssembly.instantiateStreaming(response, {});
+        const importObject = {
+          env: {
+            memory: new WebAssembly.Memory({ initial: 256 }),
+            table: new WebAssembly.Table({ initial: 0, element: 'anyfunc' }),
+            abort: () => console.log("Abort called!")
+          }      
+        };
+
+        const { instance } = await WebAssembly.instantiateStreaming(response, importObject);
 
         // Access the exported function
         const addNumbers = instance.exports.add;

@@ -31,57 +31,26 @@
 </head>
 <body>
   <h1 class="neon-text" id="status">Loading...</h1>
+<script>
+        async function runWasm() {
+            try {
+                // Fetch the .wasm file and stream-compile it
+                const response = await fetch('./powder.wasm');
+                const { instance } = await WebAssembly.instantiateStreaming(response, {});
 
-  <script type="module">
-    // Minimal Tar extractor (Ustar format)
-    async function extractWasmFromTar(url, filename) {
-      const response = await fetch(url);
-      const buffer = await response.arrayBuffer();
-      const view = new Uint8Array(buffer);
-      let offset = 0;
+                // Access the exported function (e.g., 'add')
+                const addNumbers = instance.exports.add;
 
-      while (offset < view.length) {
-        // Tar headers are 512 bytes; name is the first 100 bytes
-        const headerName = new TextDecoder().decode(view.slice(offset, offset + 100)).replace(/\0/g, '');
-        
-        // Size is at offset 124, 12 bytes long, octal string
-        const sizeStr = new TextDecoder().decode(view.slice(offset + 124, offset + 136)).trim();
-        const size = parseInt(sizeStr, 8);
+                // Call the Wasm function
+                const result = addNumbers(10, 50);
+                console.log("Result:", result); // Should log 60
 
-        if (headerName === filename) {
-          const fileStart = offset + 512;
-          return view.slice(fileStart, fileStart + size);
+            } catch (error) {
+                console.error("Error loading WebAssembly module:", error);
+            }
         }
 
-        // Move to next header: header (512) + content (padded to 512)
-        offset += 512 + Math.ceil(size / 512) * 512;
-      }
-      throw new Error(`File ${filename} not found in tar`);
-    }
-
-    async function init() {
-      const status = document.getElementById('status');
-      try {
-        // Change 'archive.tar' and 'module.wasm' to your actual file names
-        const wasmBytes = await extractWasmFromTar('tpt2.tar', 'powder.wasm');
-        
-        const { instance } = await WebAssembly.instantiate(wasmBytes, {
-          env: { 
-            memory: new WebAssembly.Memory({ initial: 256 }),
-            abort: () => console.log("Abort!") 
-          }
-        });
-
-        status.textContent = "WASM Loaded!";
-        console.log("WASM Instance:", instance);
-        
-      } catch (err) {
-        status.textContent = "Error Loading WASM";
-        console.error(err);
-      }
-    }
-
-    init();
-  </script>
+        runWasm();
+    </script>
 </body>
 </html>

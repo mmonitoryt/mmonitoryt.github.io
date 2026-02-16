@@ -17,36 +17,58 @@
 <body>
     <h1 class="neon-text" id="status">Loading...</h1>
 
-    <script type="module">
-    // 1. Only import the default module. We import everything as 'powderModule'
-    import init, * as powderModule from './powder.js';
-
-    async function runWasm() {
-        const statusElement = document.getElementById('status');
-        
-        try {
-            // 2. Initialize the WebAssembly module
-            const wasmInstance = await init();
-
-            statusElement.textContent = "Wasm Loaded! Check Console.";
-
-            // 3. Print out EVERYTHING the module exports to the F12 Developer Console
-            console.log("Direct JS Exports:", powderModule);
-            console.log("WASM Instance Exports:", wasmInstance);
-
-            // Once you find the real name of the function in the console (e.g., 'update'), 
-            // you can call it like this:
-            // powderModule.update(); 
-            // OR
-            // wasmInstance.update();
-
-        } catch (error) {
-            statusElement.textContent = "Execution Error";
-            console.error("Wasm Error:", error);
+    <!DOCTYPE html>
+<html>
+<head>
+    <title>sandsite</title>
+    <style>
+        .neon-text {
+            font-size: 80px;
+            color: #fff;
+            font-family: 'Brush Script MT', cursive;
+            font-style: italic;
+            text-align: center;
+            text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #0073e6, 0 0 20px #0073e6, 0 0 25px #0073e6, 0 0 30px #0073e6, 0 0 35px #0073e6;
         }
-    }
+        body { background-color: #111111; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+    </style>
+</head>
+<body>
+    <h1 class="neon-text" id="status">Loading...</h1>
 
-    runWasm();
-</script>
+    <script src="./powder.js"></script>
+
+    <script>
+        async function runWasm() {
+            const statusElement = document.getElementById('status');
+            
+            try {
+                // 2. Call the Emscripten factory function. 
+                // It handles downloading the .wasm file, setting up memory, and linking C++ libraries automatically.
+                const wasmModule = await create_powder();
+
+                statusElement.textContent = "Wasm Loaded!";
+
+                // 3. Print the initialized module to the console
+                console.log("Emscripten Module loaded successfully:", wasmModule);
+
+                // Note: C/C++ functions exported by Emscripten usually start with an underscore
+                if (wasmModule._main) {
+                    console.log("Found the C++ main() function!");
+                    // If your game/simulation starts via the main() function in C++, you can call it here:
+                    // wasmModule._main(); 
+                }
+
+            } catch (error) {
+                statusElement.textContent = "Error!";
+                console.error("Emscripten Load Error:", error);
+            }
+        }
+
+        // Wait for the window to load to ensure powder.js has been parsed
+        window.addEventListener('load', runWasm);
+    </script>
+</body>
+</html>
 </body>
 </html>

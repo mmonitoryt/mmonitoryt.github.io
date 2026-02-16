@@ -18,33 +18,31 @@
     <h1 class="neon-text" id="status">Loading...</h1>
 
     <script type="module">
-    // 1. Import the 'init' function from the JS file generated alongside your WASM
-    // If your file is called powder.wasm, the JS is usually powder.js
-    import init, { add } from './powder.js';
+    // 1. Only import the default module. We import everything as 'powderModule'
+    import init, * as powderModule from './powder.js';
 
     async function runWasm() {
         const statusElement = document.getElementById('status');
         
         try {
-            // 2. Initialize the WASM module
-            // This function automatically handles the stack pointer and imports
-            await init();
+            // 2. Initialize the WebAssembly module
+            const wasmInstance = await init();
 
-            // 3. Call your function directly
-            // wasm-bindgen exports functions to the top level
-            const result = add(10, 50);
-            
-            statusElement.textContent = "Result: " + result;
-            console.log("Wasm initialized successfully!");
+            statusElement.textContent = "Wasm Loaded! Check Console.";
+
+            // 3. Print out EVERYTHING the module exports to the F12 Developer Console
+            console.log("Direct JS Exports:", powderModule);
+            console.log("WASM Instance Exports:", wasmInstance);
+
+            // Once you find the real name of the function in the console (e.g., 'update'), 
+            // you can call it like this:
+            // powderModule.update(); 
+            // OR
+            // wasmInstance.update();
 
         } catch (error) {
-            statusElement.textContent = "Init Error";
-            console.error("Wasm/Bindgen Error:", error);
-            
-            // Helpful hint if the file is missing
-            if (error.message.includes("404")) {
-                console.warn("Make sure 'powder.js' is in the same folder as your HTML!");
-            }
+            statusElement.textContent = "Execution Error";
+            console.error("Wasm Error:", error);
         }
     }
 
